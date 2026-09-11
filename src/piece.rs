@@ -45,6 +45,32 @@ pub struct Piece {
     pub color: Color
 }
 
+impl Piece {
+    fn get_piece_from_char(c: char) -> Piece {
+        match c {
+            'r' => Piece {piece_type: PieceType::Rook, color: Color::Black},
+            'R' => Piece {piece_type: PieceType::Rook, color: Color::White},
+            
+            'b' => Piece {piece_type: PieceType::Bishop, color: Color::Black},
+            'B' => Piece {piece_type: PieceType::Bishop, color: Color::White},
+            
+            'n' => Piece {piece_type: PieceType::Knight, color: Color::Black},
+            'N' => Piece {piece_type: PieceType::Knight, color: Color::White},
+            
+            'p' => Piece {piece_type: PieceType::Pawn, color: Color::Black},
+            'P' => Piece {piece_type: PieceType::Pawn, color: Color::White},
+            
+            'q' => Piece {piece_type: PieceType::Queen, color: Color::Black},
+            'Q' => Piece {piece_type: PieceType::Queen, color: Color::White},
+            
+            'k' => Piece {piece_type: PieceType::King, color: Color::Black},
+            'K' => Piece {piece_type: PieceType::King, color: Color::White},
+
+            _ => panic!("Illegal FEN: Wrong character piece")
+        }
+    }
+}
+
 impl fmt::Display for Piece {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match (self.color, self.piece_type) {
