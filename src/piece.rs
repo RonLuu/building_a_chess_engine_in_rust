@@ -46,7 +46,7 @@ pub struct Piece {
 }
 
 impl Piece {
-    fn get_piece_from_char(c: char) -> Piece {
+    pub fn get_piece_from_char(c: char) -> Piece {
         match c {
             'r' => Piece {piece_type: PieceType::Rook, color: Color::Black},
             'R' => Piece {piece_type: PieceType::Rook, color: Color::White},
