@@ -2,6 +2,7 @@ use std::fmt;
 
 use crate::piece::Piece;
 
+#[derive(Debug)]
 pub struct Board {
     board: [[Option<Piece>; 8]; 8],
 }

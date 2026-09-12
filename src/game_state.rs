@@ -2,7 +2,7 @@ use std::fmt;
 
 use crate::piece::Color;
 
-
+#[derive(Debug)]
 pub struct GameState {
     side: Color,
     castle_right: u8,
