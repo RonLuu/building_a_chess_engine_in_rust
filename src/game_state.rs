@@ -2,7 +2,6 @@ use std::fmt;
 
 use crate::piece::Color;
 
-const FEN: &str = "w KQkq - 0 1";
 
 pub struct GameState {
     side: Color,
@@ -13,12 +12,7 @@ pub struct GameState {
 }
 
 impl GameState {
-    pub fn new() -> Self {
-        Self::new_with_fen(FEN)
-    }
-
-    pub fn new_with_fen(fen: &str) -> Self {
-        let byte_fen:&[u8]  = fen.as_bytes();
+    pub fn new_with_fen(byte_fen:&[u8]) -> Self {
         let mut byte_index = 0;
 
         let mut side: Color = Color::White;
@@ -108,7 +102,7 @@ impl GameState {
 impl fmt::Display for GameState{
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut game_state_string: String = String::new();
-        game_state_string.push_str("Side: ");
+        game_state_string.push_str("\nSide: ");
         game_state_string.push_str(&(self.side.to_string()));
 
         game_state_string.push_str("\nCastle rights: ");

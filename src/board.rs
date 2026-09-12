@@ -1,44 +1,31 @@
 use std::fmt;
 
 use crate::piece::Piece;
-const FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
-
 
 pub struct Board {
     board: [[Option<Piece>; 8]; 8],
 }
 
 impl Board {
-  
-    pub fn new() -> Self {
-        Self::new_with_fen(FEN)
-    }
-    
-    pub fn new_with_fen(fen: &str) -> Self {
-        let byte_fen:&[u8]  = fen.as_bytes();
+    pub fn new_with_fen(byte_fen: &[u8]) -> Self {
         let mut byte_index = 0;
 
-        Self::parse_board(byte_fen, &mut byte_index)
-    }
-    
-    fn parse_board(byte_fen: &[u8], byte_index: &mut usize) -> Self {
         let mut board: [[Option<Piece>; 8]; 8] = [[None; 8]; 8];
         let mut board_index: usize = 0;
 
         while board_index < 64 { 
-            if byte_fen[*byte_index] == b'/' {
+            if byte_fen[byte_index] == b'/' {
                 
-            } else if byte_fen[*byte_index].is_ascii_digit() {
-                let num_of_empty = (byte_fen[*byte_index] - b'0') as usize;
+            } else if byte_fen[byte_index].is_ascii_digit() {
+                let num_of_empty = (byte_fen[byte_index] - b'0') as usize;
                 board_index += num_of_empty
             } else {
-                let c = byte_fen[*byte_index] as char;
+                let c = byte_fen[byte_index] as char;
                 board[(8-1) - board_index/8][board_index%8] = Some(Piece::get_piece_from_char(c));
                 board_index += 1
             }
-            *byte_index += 1;
+            byte_index += 1;
         }
-        *byte_index += 1;
 
         Self {
             board
@@ -74,6 +61,6 @@ impl fmt::Display for Board {
             board_string.push_str(" ");
         }
         
-        write!(f, "{}", board_string)
+        write!(f, "{}\n", board_string)
     }   
 }
