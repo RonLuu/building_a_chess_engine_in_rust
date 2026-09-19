@@ -4,14 +4,14 @@ use crate::piece::Piece;
 
 #[derive(Debug)]
 pub struct Board {
-    board: [[Option<Piece>; 8]; 8],
+    pub squares: [[Option<Piece>; 8]; 8],
 }
 
 impl Board {
     pub fn new_with_fen(byte_fen: &[u8]) -> Self {
         let mut byte_index = 0;
 
-        let mut board: [[Option<Piece>; 8]; 8] = [[None; 8]; 8];
+        let mut squares: [[Option<Piece>; 8]; 8] = [[None; 8]; 8];
         let mut board_index: usize = 0;
 
         while board_index < 64 { 
@@ -22,21 +22,25 @@ impl Board {
                 board_index += num_of_empty
             } else {
                 let c = byte_fen[byte_index] as char;
-                board[(8-1) - board_index/8][board_index%8] = Some(Piece::get_piece_from_char(c));
+                squares[(8-1) - board_index/8][board_index%8] = Some(Piece::get_piece_from_char(c));
                 board_index += 1
             }
             byte_index += 1;
         }
 
         Self {
-            board
+            squares
         }
+    }
+
+    pub fn get_piece(&self, rank: usize, file: usize) -> Option<Piece> {
+        self.squares[rank][file]
     }
 }
 
 impl fmt::Display for Board {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let board = &self.board;
+        let board = &self.squares;
         let mut board_string: String = String::new();
 
         for row in (0..8).rev() {
