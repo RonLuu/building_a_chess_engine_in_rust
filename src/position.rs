@@ -1,13 +1,13 @@
 use std::fmt;
 
-use crate::{board::Board, game_state::GameState};
+use crate::{board::Board, chess_move::{ChessMove, Flag}, game_state::GameState, piece::{Color, PieceType} };
 
 const FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 #[derive(Debug)]
 pub struct Position {
-    board: Board,
-    game_state: GameState
+    pub board: Board,
+    pub game_state: GameState
 }
 
 impl Position {
@@ -41,4 +41,3 @@ impl fmt::Display for Position {
         writeln!(f, "{}{}", self.board, self.game_state)
     }
 }
-

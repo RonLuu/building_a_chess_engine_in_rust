@@ -4,11 +4,11 @@ use crate::piece::Color;
 
 #[derive(Debug)]
 pub struct GameState {
-    side: Color,
-    castle_right: u8,
-    en_pass_sq: u8,
-    half_move: u8,
-    full_move: u16,
+    pub side: Color,
+    pub castle_right: u8,
+    pub en_pass_sq: u8,
+    pub half_move: u8,
+    pub full_move: u16,
 }
 
 impl GameState {
