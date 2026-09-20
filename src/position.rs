@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::{board::Board, chess_move::{ChessMove, Flag}, game_state::GameState, piece::{Color, PieceType} };
+use crate::{board::Board, game_state::GameState };
 
 const FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 

@@ -36,6 +36,13 @@ impl Board {
     pub fn get_piece(&self, rank: usize, file: usize) -> Option<Piece> {
         self.squares[rank][file]
     }
+
+    pub fn get_piece_from_square(&self, square: usize) -> Option<Piece> {
+        let rank = square / 8;
+        let file = square % 8;
+
+        Self::get_piece(&self, rank, file)
+    }
 }
 
 impl fmt::Display for Board {

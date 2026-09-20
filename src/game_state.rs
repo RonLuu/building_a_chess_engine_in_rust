@@ -2,7 +2,7 @@ use std::fmt;
 
 use crate::piece::Color;
 
-const EMPTY_EN_PASS_SQ: u8 = 64;
+pub const EMPTY_EN_PASS_SQ: u8 = 64;
 
 #[derive(Debug)]
 pub struct GameState {
