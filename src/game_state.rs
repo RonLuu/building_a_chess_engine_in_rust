@@ -2,6 +2,8 @@ use std::fmt;
 
 use crate::piece::Color;
 
+const EMPTY_EN_PASS_SQ: u8 = 64;
+
 #[derive(Debug)]
 pub struct GameState {
     pub side: Color,
@@ -21,7 +23,7 @@ impl GameState {
         let mut castle_right: u8 =  0;
         Self::parse_castle_right(&mut castle_right, byte_fen, &mut byte_index);
 
-        let mut en_pass_sq: u8 =  64;
+        let mut en_pass_sq: u8 =  EMPTY_EN_PASS_SQ;
         Self::parse_en_pass_sq(&mut en_pass_sq, byte_fen, &mut byte_index);
         
         let mut half_move: u8 =  0;
