@@ -1,5 +1,10 @@
 use crate::{
-    board::Board, chess_move::{ChessMove, Flag}, game_state, piece::{Color, PieceType}, position::Position,
+    board::Board,
+    chess_move::{ChessMove, Flag},
+    game_state,
+    piece::{Color, PieceType},
+    position::Position,
+    util::check_sq_in_board
 };
 
 impl Position {
@@ -9,7 +14,12 @@ impl Position {
         let side: Color = self.game_state.side;
 
         let en_passant_sq = self.game_state.en_pass_sq;
-        Self::generate_pseudo_legal_non_sliding_moves(side, board, &mut pseudo_legal_moves, en_passant_sq);
+        Self::generate_pseudo_legal_non_sliding_moves(
+            side,
+            board,
+            &mut pseudo_legal_moves,
+            en_passant_sq,
+        );
         Self::generate_pseudo_legal_sliding_moves(side, board, &mut pseudo_legal_moves);
         pseudo_legal_moves
     }
@@ -53,7 +63,7 @@ impl Position {
                             let new_rank = rank as i8 + knight_direction.0;
                             let new_file = file as i8 + knight_direction.1;
 
-                            if !Self::check_sq_in_board(new_rank, new_file) {
+                            if !check_sq_in_board(new_rank, new_file) {
                                 continue;
                             }
 
@@ -99,7 +109,7 @@ impl Position {
                             let new_rank = rank as i8 + king_direction.0;
                             let new_file = file as i8 + king_direction.1;
 
-                            if !Self::check_sq_in_board(new_rank, new_file) {
+                            if !check_sq_in_board(new_rank, new_file) {
                                 continue;
                             }
 
@@ -118,7 +128,12 @@ impl Position {
         }
     }
 
-    fn generate_pawn_moves(side: Color, board: &Board, pseudo_legal_moves: &mut Vec<ChessMove>, en_passant_sq: u8) {
+    fn generate_pawn_moves(
+        side: Color,
+        board: &Board,
+        pseudo_legal_moves: &mut Vec<ChessMove>,
+        en_passant_sq: u8,
+    ) {
         fn generate_pawn_starting_move(
             board: &Board,
             pseudo_legal_moves: &mut Vec<ChessMove>,
@@ -203,7 +218,7 @@ impl Position {
             let new_rank = (rank as i8 + direction) as i8;
 
             let new_file_left = (file as i8) - 1;
-            if Position::check_sq_in_board(new_rank, new_file_left)
+            if check_sq_in_board(new_rank, new_file_left)
                 && Position::check_enemy_piece(board, side, new_rank, new_file_left)
             {
                 let to_sq_left: u8 = (new_rank * 8 + new_file_left) as u8;
@@ -234,7 +249,7 @@ impl Position {
             }
 
             let new_file_right = (file as i8) + 1;
-            if Position::check_sq_in_board(new_rank, new_file_right)
+            if check_sq_in_board(new_rank, new_file_right)
                 && Position::check_enemy_piece(board, side, new_rank, new_file_right)
             {
                 let to_sq_right: u8 = (new_rank * 8 + new_file_right) as u8;
@@ -269,8 +284,8 @@ impl Position {
             pseudo_legal_moves: &mut Vec<ChessMove>,
             rank: usize,
             file: usize,
-            direction: i8, 
-            en_passant_sq: u8
+            direction: i8,
+            en_passant_sq: u8,
         ) {
             // If there isn't an en passant square
             if en_passant_sq == game_state::EMPTY_EN_PASS_SQ {
@@ -285,12 +300,16 @@ impl Position {
             if en_passant_rank != 5 && en_passant_rank != 2 {
                 panic!("The en passant square is wrong!!!")
             }
-            
+
             // If the en passant square is available for the current pawn
-            if (rank as i8 + direction) as u8 == en_passant_rank && 
-                en_passant_file.abs_diff(file as u8)  == 1
+            if (rank as i8 + direction) as u8 == en_passant_rank
+                && en_passant_file.abs_diff(file as u8) == 1
             {
-                pseudo_legal_moves.push(ChessMove::new((rank * 8 + file) as u8, en_passant_sq, Some(Flag::EnPassant)));
+                pseudo_legal_moves.push(ChessMove::new(
+                    (rank * 8 + file) as u8,
+                    en_passant_sq,
+                    Some(Flag::EnPassant),
+                ));
             }
         }
 
@@ -347,8 +366,8 @@ impl Position {
                         pseudo_legal_moves,
                         rank,
                         file,
-                        direction, 
-                        en_passant_sq
+                        direction,
+                        en_passant_sq,
                     );
                 }
             }
@@ -444,10 +463,6 @@ impl Position {
                 directions,
             )
         }
-    }
-    
-    fn check_sq_in_board(rank: i8, file: i8) -> bool {
-        (0 <= rank && rank < 8) && (0 <= file && file < 8)
     }
 
     fn check_ally_piece(board: &Board, side: Color, rank: i8, file: i8) -> bool {
@@ -787,7 +802,12 @@ mod tests {
         let position = Position::new_with_fen("8/8/8/8/8/8/8/R7 w - - 0 1");
         let moves: Vec<ChessMove> = position.generate_pseudo_legal_moves();
 
-        assert_eq!(moves.len(), 14, "rook on a1 should have exactly 14 moves, got {:#?}", moves);
+        assert_eq!(
+            moves.len(),
+            14,
+            "rook on a1 should have exactly 14 moves, got {:#?}",
+            moves
+        );
 
         // along the a-file (a2..a8)
         for rank in 1..8 {
@@ -815,7 +835,12 @@ mod tests {
         let position = Position::new_with_fen("8/3P4/8/8/3R4/8/8/8 w - - 0 1");
         let moves: Vec<ChessMove> = position.generate_pseudo_legal_moves();
 
-        assert_eq!(moves.len(), 16, "rook on d4 blocked by own pawn on d6 should have 11 moves, got {:#?}", moves);
+        assert_eq!(
+            moves.len(),
+            16,
+            "rook on d4 blocked by own pawn on d6 should have 11 moves, got {:#?}",
+            moves
+        );
     }
 
     #[test]
@@ -824,14 +849,25 @@ mod tests {
         let position = Position::new_with_fen("8/8/3p4/8/3R4/8/8/8 w - - 0 1");
         let moves: Vec<ChessMove> = position.generate_pseudo_legal_moves();
 
-        assert_eq!(moves.len(), 12, "rook on d4 capturing enemy pawn on d6 should have 12 moves, got {:#?}", moves);
+        assert_eq!(
+            moves.len(),
+            12,
+            "rook on d4 capturing enemy pawn on d6 should have 12 moves, got {:#?}",
+            moves
+        );
 
         let from = ChessMove::rank_and_file_to_square(3, 3); // d4
         let d6 = ChessMove::new(from, ChessMove::rank_and_file_to_square(5, 3), None);
         let d7 = ChessMove::new(from, ChessMove::rank_and_file_to_square(6, 3), None);
 
-        assert!(moves.contains(&d6), "Should be able to capture enemy pawn on d6");
-        assert!(!moves.contains(&d7), "Should NOT be able to slide past a captured piece to d7");
+        assert!(
+            moves.contains(&d6),
+            "Should be able to capture enemy pawn on d6"
+        );
+        assert!(
+            !moves.contains(&d7),
+            "Should NOT be able to slide past a captured piece to d7"
+        );
     }
 
     #[test]
@@ -839,19 +875,38 @@ mod tests {
         let position = Position::new_with_fen("8/8/8/8/3B4/8/8/8 w - - 0 1");
         let moves: Vec<ChessMove> = position.generate_pseudo_legal_moves();
 
-        assert_eq!(moves.len(), 13, "bishop on d4 in open board should have 13 moves, got {:#?}", moves);
+        assert_eq!(
+            moves.len(),
+            13,
+            "bishop on d4 in open board should have 13 moves, got {:#?}",
+            moves
+        );
 
         let from = ChessMove::rank_and_file_to_square(3, 3); // d4
         let diagonal_targets = [
-            (4, 4), (5, 5), (6, 6), (7, 7), // up-right: e5,f6,g7,h8
-            (4, 2), (5, 1), (6, 0),          // up-left: c5,b6,a7
-            (2, 4), (1, 5), (0, 6),          // down-right: e3,f2,g1
-            (2, 2), (1, 1), (0, 0),          // down-left: c3,b2,a1
+            (4, 4),
+            (5, 5),
+            (6, 6),
+            (7, 7), // up-right: e5,f6,g7,h8
+            (4, 2),
+            (5, 1),
+            (6, 0), // up-left: c5,b6,a7
+            (2, 4),
+            (1, 5),
+            (0, 6), // down-right: e3,f2,g1
+            (2, 2),
+            (1, 1),
+            (0, 0), // down-left: c3,b2,a1
         ];
 
         for (rank, file) in diagonal_targets {
-            let expected = ChessMove::new(from, ChessMove::rank_and_file_to_square(rank, file), None);
-            assert!(moves.contains(&expected), "Missing diagonal move: {:#?}", expected);
+            let expected =
+                ChessMove::new(from, ChessMove::rank_and_file_to_square(rank, file), None);
+            assert!(
+                moves.contains(&expected),
+                "Missing diagonal move: {:#?}",
+                expected
+            );
         }
     }
 
@@ -860,15 +915,22 @@ mod tests {
         let position = Position::new_with_fen("8/8/8/8/3Q4/8/8/8 w - - 0 1");
         let moves: Vec<ChessMove> = position.generate_pseudo_legal_moves();
 
-        assert_eq!(moves.len(), 27, "queen on d4 in open board should have 27 moves, got {:#?}", moves);
+        assert_eq!(
+            moves.len(),
+            27,
+            "queen on d4 in open board should have 27 moves, got {:#?}",
+            moves
+        );
 
         let from = ChessMove::rank_and_file_to_square(3, 3); // d4
         // spot-check one straight and one diagonal, rather than re-listing all 27
         let straight = ChessMove::new(from, ChessMove::rank_and_file_to_square(7, 3), None); // d8
         let diagonal = ChessMove::new(from, ChessMove::rank_and_file_to_square(0, 0), None); // a1
 
-        assert!(moves.contains(&straight), "Missing straight-line move to d8");
+        assert!(
+            moves.contains(&straight),
+            "Missing straight-line move to d8"
+        );
         assert!(moves.contains(&diagonal), "Missing diagonal move to a1");
     }
-
 }

@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::{piece::{self, PieceType}};
+use crate::{piece::{PieceType}};
 
 /// Additional flag for a move, can only be
 /// Promotion
