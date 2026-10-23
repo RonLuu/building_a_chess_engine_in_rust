@@ -1,7 +1,11 @@
 use std::fmt;
 
-use crate::{chess_move::Flag::EnPassant, piece::{self, PieceType}};
+use crate::{piece::{self, PieceType}};
 
+/// Additional flag for a move, can only be
+/// Promotion
+/// EnPassant
+/// Castle
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Flag {
     Promotion(PieceType),
@@ -9,10 +13,16 @@ pub enum Flag {
     Castle,
 }
 
+/// A single move from one square to another, plus any special flag needed
+/// to apply it correctly.
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct ChessMove {
+    /// From square index (rank * 8 + file)
     from: u8,
+    /// To square index (rank * 8 + file)
     to: u8,
+    /// 'None' for ordinary move
+    /// 'Some' for promotion, EnPassant and Castle
     flag: Option<Flag>
 }
 
