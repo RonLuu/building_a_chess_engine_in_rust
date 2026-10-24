@@ -11,10 +11,12 @@ pub struct GameState {
     pub en_pass_sq: u8,
     pub half_move: u8,
     pub full_move: u16,
+    pub w_king_sq: u8,
+    pub b_king_sq: u8,
 }
 
 impl GameState {
-    pub fn new_with_fen(byte_fen:&[u8]) -> Self {
+    pub fn new_with_fen(byte_fen:&[u8], w_king_sq: u8, b_king_sq: u8) -> Self {
         let mut byte_index = 0;
 
         let mut side: Color = Color::White;
@@ -36,6 +38,8 @@ impl GameState {
             en_pass_sq,
             half_move,
             full_move,
+            w_king_sq,
+            b_king_sq
         }
     }
     
