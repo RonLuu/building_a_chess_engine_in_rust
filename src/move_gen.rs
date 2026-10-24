@@ -4,7 +4,7 @@ use crate::{
     game_state,
     piece::{Color, PieceType},
     position::Position,
-    util::check_sq_in_board
+    util::{check_sq_in_board, rank_and_file_to_square}
 };
 
 impl Position {
@@ -524,53 +524,53 @@ mod tests {
 
         let expected_moves: Vec<ChessMove> = vec![
             ChessMove::new(
-                ChessMove::rank_and_file_to_square(3, 3),
-                ChessMove::rank_and_file_to_square(5, 2),
+                rank_and_file_to_square(3, 3),
+                rank_and_file_to_square(5, 2),
                 None,
             ),
             ChessMove::new(
-                ChessMove::rank_and_file_to_square(3, 3),
-                ChessMove::rank_and_file_to_square(5, 4),
+                rank_and_file_to_square(3, 3),
+                rank_and_file_to_square(5, 4),
                 None,
             ),
             ChessMove::new(
-                ChessMove::rank_and_file_to_square(3, 3),
-                ChessMove::rank_and_file_to_square(4, 1),
+                rank_and_file_to_square(3, 3),
+                rank_and_file_to_square(4, 1),
                 None,
             ),
             ChessMove::new(
-                ChessMove::rank_and_file_to_square(3, 3),
-                ChessMove::rank_and_file_to_square(4, 5),
+                rank_and_file_to_square(3, 3),
+                rank_and_file_to_square(4, 5),
                 None,
             ),
             ChessMove::new(
-                ChessMove::rank_and_file_to_square(3, 3),
-                ChessMove::rank_and_file_to_square(2, 1),
+                rank_and_file_to_square(3, 3),
+                rank_and_file_to_square(2, 1),
                 None,
             ),
             ChessMove::new(
-                ChessMove::rank_and_file_to_square(3, 3),
-                ChessMove::rank_and_file_to_square(2, 5),
+                rank_and_file_to_square(3, 3),
+                rank_and_file_to_square(2, 5),
                 None,
             ),
             ChessMove::new(
-                ChessMove::rank_and_file_to_square(1, 2),
-                ChessMove::rank_and_file_to_square(2, 2),
+                rank_and_file_to_square(1, 2),
+                rank_and_file_to_square(2, 2),
                 None,
             ),
             ChessMove::new(
-                ChessMove::rank_and_file_to_square(1, 2),
-                ChessMove::rank_and_file_to_square(3, 2),
+                rank_and_file_to_square(1, 2),
+                rank_and_file_to_square(3, 2),
                 None,
             ),
             ChessMove::new(
-                ChessMove::rank_and_file_to_square(1, 4),
-                ChessMove::rank_and_file_to_square(2, 4),
+                rank_and_file_to_square(1, 4),
+                rank_and_file_to_square(2, 4),
                 None,
             ),
             ChessMove::new(
-                ChessMove::rank_and_file_to_square(1, 4),
-                ChessMove::rank_and_file_to_square(3, 4),
+                rank_and_file_to_square(1, 4),
+                rank_and_file_to_square(3, 4),
                 None,
             ),
         ];
@@ -599,18 +599,18 @@ mod tests {
 
         let expected_moves: Vec<ChessMove> = vec![
             ChessMove::new(
-                ChessMove::rank_and_file_to_square(0, 0),
-                ChessMove::rank_and_file_to_square(1, 0),
+                rank_and_file_to_square(0, 0),
+                rank_and_file_to_square(1, 0),
                 None,
             ),
             ChessMove::new(
-                ChessMove::rank_and_file_to_square(0, 0),
-                ChessMove::rank_and_file_to_square(0, 1),
+                rank_and_file_to_square(0, 0),
+                rank_and_file_to_square(0, 1),
                 None,
             ),
             ChessMove::new(
-                ChessMove::rank_and_file_to_square(0, 0),
-                ChessMove::rank_and_file_to_square(1, 1),
+                rank_and_file_to_square(0, 0),
+                rank_and_file_to_square(1, 1),
                 None,
             ),
         ];
@@ -639,38 +639,38 @@ mod tests {
 
         let expected_moves: Vec<ChessMove> = vec![
             ChessMove::new(
-                ChessMove::rank_and_file_to_square(3, 4),
-                ChessMove::rank_and_file_to_square(4, 3),
+                rank_and_file_to_square(3, 4),
+                rank_and_file_to_square(4, 3),
                 None,
             ),
             ChessMove::new(
-                ChessMove::rank_and_file_to_square(3, 4),
-                ChessMove::rank_and_file_to_square(3, 3),
+                rank_and_file_to_square(3, 4),
+                rank_and_file_to_square(3, 3),
                 None,
             ),
             ChessMove::new(
-                ChessMove::rank_and_file_to_square(3, 4),
-                ChessMove::rank_and_file_to_square(2, 3),
+                rank_and_file_to_square(3, 4),
+                rank_and_file_to_square(2, 3),
                 None,
             ),
             ChessMove::new(
-                ChessMove::rank_and_file_to_square(3, 4),
-                ChessMove::rank_and_file_to_square(4, 5),
+                rank_and_file_to_square(3, 4),
+                rank_and_file_to_square(4, 5),
                 None,
             ),
             ChessMove::new(
-                ChessMove::rank_and_file_to_square(3, 4),
-                ChessMove::rank_and_file_to_square(3, 5),
+                rank_and_file_to_square(3, 4),
+                rank_and_file_to_square(3, 5),
                 None,
             ),
             ChessMove::new(
-                ChessMove::rank_and_file_to_square(3, 4),
-                ChessMove::rank_and_file_to_square(2, 5),
+                rank_and_file_to_square(3, 4),
+                rank_and_file_to_square(2, 5),
                 None,
             ),
             ChessMove::new(
-                ChessMove::rank_and_file_to_square(3, 4),
-                ChessMove::rank_and_file_to_square(4, 4),
+                rank_and_file_to_square(3, 4),
+                rank_and_file_to_square(4, 4),
                 None,
             ),
         ];
@@ -698,8 +698,8 @@ mod tests {
         );
 
         let expected_moves: Vec<ChessMove> = vec![ChessMove::new(
-            ChessMove::rank_and_file_to_square(1, 4),
-            ChessMove::rank_and_file_to_square(2, 4),
+            rank_and_file_to_square(1, 4),
+            rank_and_file_to_square(2, 4),
             None,
         )];
 
@@ -727,18 +727,18 @@ mod tests {
 
         let expected_moves: Vec<ChessMove> = vec![
             ChessMove::new(
-                ChessMove::rank_and_file_to_square(1, 4),
-                ChessMove::rank_and_file_to_square(2, 4),
+                rank_and_file_to_square(1, 4),
+                rank_and_file_to_square(2, 4),
                 None,
             ),
             ChessMove::new(
-                ChessMove::rank_and_file_to_square(1, 4),
-                ChessMove::rank_and_file_to_square(3, 4),
+                rank_and_file_to_square(1, 4),
+                rank_and_file_to_square(3, 4),
                 None,
             ),
             ChessMove::new(
-                ChessMove::rank_and_file_to_square(1, 4),
-                ChessMove::rank_and_file_to_square(2, 3),
+                rank_and_file_to_square(1, 4),
+                rank_and_file_to_square(2, 3),
                 None,
             ),
         ];
@@ -767,23 +767,23 @@ mod tests {
 
         let expected_moves: Vec<ChessMove> = vec![
             ChessMove::new(
-                ChessMove::rank_and_file_to_square(6, 4),
-                ChessMove::rank_and_file_to_square(7, 4),
+                rank_and_file_to_square(6, 4),
+                rank_and_file_to_square(7, 4),
                 Some(Flag::Promotion(PieceType::Rook)),
             ),
             ChessMove::new(
-                ChessMove::rank_and_file_to_square(6, 4),
-                ChessMove::rank_and_file_to_square(7, 4),
+                rank_and_file_to_square(6, 4),
+                rank_and_file_to_square(7, 4),
                 Some(Flag::Promotion(PieceType::Queen)),
             ),
             ChessMove::new(
-                ChessMove::rank_and_file_to_square(6, 4),
-                ChessMove::rank_and_file_to_square(7, 4),
+                rank_and_file_to_square(6, 4),
+                rank_and_file_to_square(7, 4),
                 Some(Flag::Promotion(PieceType::Bishop)),
             ),
             ChessMove::new(
-                ChessMove::rank_and_file_to_square(6, 4),
-                ChessMove::rank_and_file_to_square(7, 4),
+                rank_and_file_to_square(6, 4),
+                rank_and_file_to_square(7, 4),
                 Some(Flag::Promotion(PieceType::Knight)),
             ),
         ];
@@ -812,8 +812,8 @@ mod tests {
         // along the a-file (a2..a8)
         for rank in 1..8 {
             let expected = ChessMove::new(
-                ChessMove::rank_and_file_to_square(0, 0),
-                ChessMove::rank_and_file_to_square(rank, 0),
+                rank_and_file_to_square(0, 0),
+                rank_and_file_to_square(rank, 0),
                 None,
             );
             assert!(moves.contains(&expected), "Missing move: {:#?}", expected);
@@ -821,8 +821,8 @@ mod tests {
         // along the 1st rank (b1..h1)
         for file in 1..8 {
             let expected = ChessMove::new(
-                ChessMove::rank_and_file_to_square(0, 0),
-                ChessMove::rank_and_file_to_square(0, file),
+                rank_and_file_to_square(0, 0),
+                rank_and_file_to_square(0, file),
                 None,
             );
             assert!(moves.contains(&expected), "Missing move: {:#?}", expected);
@@ -856,9 +856,9 @@ mod tests {
             moves
         );
 
-        let from = ChessMove::rank_and_file_to_square(3, 3); // d4
-        let d6 = ChessMove::new(from, ChessMove::rank_and_file_to_square(5, 3), None);
-        let d7 = ChessMove::new(from, ChessMove::rank_and_file_to_square(6, 3), None);
+        let from = rank_and_file_to_square(3, 3); // d4
+        let d6 = ChessMove::new(from, rank_and_file_to_square(5, 3), None);
+        let d7 = ChessMove::new(from, rank_and_file_to_square(6, 3), None);
 
         assert!(
             moves.contains(&d6),
@@ -882,7 +882,7 @@ mod tests {
             moves
         );
 
-        let from = ChessMove::rank_and_file_to_square(3, 3); // d4
+        let from = rank_and_file_to_square(3, 3); // d4
         let diagonal_targets = [
             (4, 4),
             (5, 5),
@@ -901,7 +901,7 @@ mod tests {
 
         for (rank, file) in diagonal_targets {
             let expected =
-                ChessMove::new(from, ChessMove::rank_and_file_to_square(rank, file), None);
+                ChessMove::new(from, rank_and_file_to_square(rank, file), None);
             assert!(
                 moves.contains(&expected),
                 "Missing diagonal move: {:#?}",
@@ -922,10 +922,10 @@ mod tests {
             moves
         );
 
-        let from = ChessMove::rank_and_file_to_square(3, 3); // d4
+        let from = rank_and_file_to_square(3, 3); // d4
         // spot-check one straight and one diagonal, rather than re-listing all 27
-        let straight = ChessMove::new(from, ChessMove::rank_and_file_to_square(7, 3), None); // d8
-        let diagonal = ChessMove::new(from, ChessMove::rank_and_file_to_square(0, 0), None); // a1
+        let straight = ChessMove::new(from, rank_and_file_to_square(7, 3), None); // d8
+        let diagonal = ChessMove::new(from, rank_and_file_to_square(0, 0), None); // a1
 
         assert!(
             moves.contains(&straight),
