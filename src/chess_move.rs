@@ -18,12 +18,12 @@ pub enum Flag {
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct ChessMove {
     /// From square index (rank * 8 + file)
-    from: u8,
+    pub from: u8,
     /// To square index (rank * 8 + file)
-    to: u8,
+    pub to: u8,
     /// 'None' for ordinary move
     /// 'Some' for promotion, EnPassant and Castle
-    flag: Option<Flag>
+    pub flag: Option<Flag>
 }
 
 impl ChessMove {
