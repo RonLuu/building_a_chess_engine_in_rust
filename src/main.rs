@@ -1,11 +1,24 @@
 mod piece;
 mod board;
+mod game_state;
+mod position;
+mod chess_move;
+mod move_gen;
+mod attack;
+mod util;
+mod constants;
 
-use crate::board::ChessBoard;
+
+use crate::{position::Position, piece::Color, util::square_to_string};
 
 fn main() {
-    let fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
-    let chess_board: ChessBoard = board::ChessBoard::new_with_fen(fen);
-    println!("{}", chess_board)
-    
+    let pos = Position::new_with_fen("4r2k/8/8/8/8/8/4B3/4K3 w - - 0 1");
+    println!("{}", pos);
+    let generated_move = pos.generate_pseudo_legal_moves();
+    let mut counter = 0;
+    for chess_move in generated_move {
+        println!("{} {}", chess_move, counter);
+        counter += 1;
+    }
+
 }

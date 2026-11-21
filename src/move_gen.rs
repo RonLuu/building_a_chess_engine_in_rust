@@ -8,6 +8,33 @@ use crate::{
 };
 
 impl Position {
+    pub fn generate_legal_moves(&self) -> Vec<ChessMove> {
+        let mut legal_moves = Vec::new();
+        let pseudo_legal_moves: Vec<ChessMove> = self.generate_pseudo_legal_moves();
+        
+        for pseudo_legal_move in &pseudo_legal_moves {
+            let new_position: Position = self.apply_move(pseudo_legal_move);
+            if !new_position.check_legal() {
+                continue
+            }
+            legal_moves.push(*pseudo_legal_move);
+        }
+
+        legal_moves
+    }
+
+    fn check_legal(&self) -> bool{
+        let attack_side = self.game_state.side;
+        let attacked_king_sq;
+        if attack_side == Color::White {
+            attacked_king_sq = self.game_state.b_king_sq;
+        } else {
+            attacked_king_sq = self.game_state.w_king_sq;
+        }
+
+        return !self.board.is_square_attacked(attacked_king_sq, attack_side);
+    }
+
     pub fn generate_pseudo_legal_moves(&self) -> Vec<ChessMove> {
         let mut pseudo_legal_moves: Vec<ChessMove> = Vec::new();
         let board: &Board = &(self.board);

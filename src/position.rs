@@ -73,7 +73,7 @@ impl Position {
         (w_king_sq, b_king_sq)
     }
 
-    fn apply_move(&self, chess_move: &ChessMove) -> Position {
+    pub fn apply_move(&self, chess_move: &ChessMove) -> Position {
         let mut new_position = self.clone();
         let new_board = &mut new_position.board;
         let new_game_state = &mut new_position.game_state;

@@ -66,6 +66,7 @@ impl Board {
             } 
         }
     }
+    
     fn place_piece_from_square(&mut self, square: usize, piece: Option<Piece>) {
         let rank = square / 8;
         let file = square % 8;
