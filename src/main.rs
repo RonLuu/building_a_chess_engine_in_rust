@@ -9,12 +9,13 @@ mod util;
 mod constants;
 
 
-use crate::{position::Position, piece::Color, util::square_to_string};
+use crate::{position::Position};
 
 fn main() {
-    let pos = Position::new_with_fen("4r2k/8/8/8/8/8/4B3/4K3 w - - 0 1");
+    let _pos = Position::new();
+    let pos = Position::new_with_fen("r3k2r/R6R/8/6B1/8/8/1R6/4K3 b kq - 0 1");
     println!("{}", pos);
-    let generated_move = pos.generate_pseudo_legal_moves();
+    let generated_move = pos.generate_legal_moves();
     let mut counter = 0;
     for chess_move in generated_move {
         println!("{} {}", chess_move, counter);

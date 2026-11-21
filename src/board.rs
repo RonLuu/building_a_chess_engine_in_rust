@@ -1,8 +1,7 @@
 use std::fmt;
 
 use crate::{
-    piece::{Piece, PieceType, Color},
-    chess_move::{Flag}
+    chess_move::Flag, piece::{Color, Piece, PieceType}
 };
 
 #[derive(Debug, Clone)]

@@ -140,7 +140,7 @@ impl Board {
                             return true;
                         }
 
-                        return false;
+                        break;
                     }
                 }
             }

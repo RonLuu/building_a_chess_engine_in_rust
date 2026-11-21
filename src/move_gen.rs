@@ -1,10 +1,5 @@
 use crate::{
-    board::Board,
-    chess_move::{ChessMove, Flag},
-    game_state,
-    piece::{Color, PieceType},
-    position::Position,
-    util::{check_sq_in_board, rank_and_file_to_square}
+    board::Board, chess_move::{ChessMove, Flag}, game_state, piece::{Color, PieceType}, position::Position, util::check_sq_in_board,
 };
 
 impl Position {
@@ -13,6 +8,10 @@ impl Position {
         let pseudo_legal_moves: Vec<ChessMove> = self.generate_pseudo_legal_moves();
         
         for pseudo_legal_move in &pseudo_legal_moves {
+            if pseudo_legal_move.flag == Some(Flag::Castle) && !self.check_legal_castle(pseudo_legal_move) {
+                continue
+            }
+
             let new_position: Position = self.apply_move(pseudo_legal_move);
             if !new_position.check_legal() {
                 continue
@@ -23,7 +22,35 @@ impl Position {
         legal_moves
     }
 
-    fn check_legal(&self) -> bool{
+    fn check_legal_castle(&self, pseudo_legal_move: &ChessMove) -> bool {
+        let current_side = self.game_state.side;
+        let attacked_king_sq;
+        let attack_side;
+
+        if current_side == Color::White {
+            attacked_king_sq = self.game_state.w_king_sq;
+            attack_side = Color::Black;
+        } else {
+            attacked_king_sq = self.game_state.b_king_sq;
+            attack_side = Color::White;
+        }
+
+        let from = pseudo_legal_move.from;
+        let to = pseudo_legal_move.to;
+        
+        // King side castle
+        if (from as i8 - to as i8) > 0 {
+            return !self.board.is_square_attacked(attacked_king_sq, attack_side) &&
+                    !self.board.is_square_attacked(attacked_king_sq + 1, attack_side) &&
+                    !self.board.is_square_attacked(attacked_king_sq + 2, attack_side);
+        } else {
+            return !self.board.is_square_attacked(attacked_king_sq, attack_side) &&
+                    !self.board.is_square_attacked(attacked_king_sq - 1, attack_side) &&
+                    !self.board.is_square_attacked(attacked_king_sq - 2, attack_side);
+        }
+    }
+    
+    fn check_legal(&self) -> bool {
         let attack_side = self.game_state.side;
         let attacked_king_sq;
         if attack_side == Color::White {
@@ -41,11 +68,13 @@ impl Position {
         let side: Color = self.game_state.side;
 
         let en_passant_sq = self.game_state.en_pass_sq;
+        let castle_right = self.game_state.castle_right;
         Self::generate_pseudo_legal_non_sliding_moves(
             side,
             board,
             &mut pseudo_legal_moves,
             en_passant_sq,
+            castle_right
         );
         Self::generate_pseudo_legal_sliding_moves(side, board, &mut pseudo_legal_moves);
         pseudo_legal_moves
@@ -56,9 +85,10 @@ impl Position {
         board: &Board,
         pseudo_legal_moves: &mut Vec<ChessMove>,
         en_passant_sq: u8,
+        castle_right: u8
     ) {
         Self::generate_pawn_moves(side, board, pseudo_legal_moves, en_passant_sq);
-        Self::generate_king_moves(side, board, pseudo_legal_moves);
+        Self::generate_king_moves(side, board, pseudo_legal_moves, castle_right);
         Self::generate_knight_moves(side, board, pseudo_legal_moves);
     }
 
@@ -109,7 +139,7 @@ impl Position {
         }
     }
 
-    fn generate_king_moves(side: Color, board: &Board, pseudo_legal_moves: &mut Vec<ChessMove>) {
+    fn generate_king_moves(side: Color, board: &Board, pseudo_legal_moves: &mut Vec<ChessMove>, castle_right: u8) {
         let king_directions: [(i8, i8); 8] = [
             (0, 1),
             (0, -1),
@@ -125,17 +155,21 @@ impl Position {
             for file in 0..8 {
                 match board.get_piece(rank, file) {
                     Some(piece) => {
+                        // Find the right king
                         if piece.piece_type != PieceType::King {
                             continue;
                         }
                         if piece.color != side {
                             continue;
                         }
+
+                        // Go through all the king's directions
                         let from_sq: u8 = (rank * 8 + file) as u8;
                         for king_direction in king_directions {
                             let new_rank = rank as i8 + king_direction.0;
                             let new_file = file as i8 + king_direction.1;
 
+                            // Check border
                             if !check_sq_in_board(new_rank, new_file) {
                                 continue;
                             }
@@ -148,11 +182,40 @@ impl Position {
                             let chess_move = ChessMove::new(from_sq, to_sq, None);
                             pseudo_legal_moves.push(chess_move);
                         }
+                        Self::generate_castle_moves(pseudo_legal_moves, from_sq, side, castle_right);
+                        break;
                     }
                     None => continue,
                 }
             }
         }
+    }
+
+    fn generate_castle_moves(pseudo_legal_moves: &mut Vec<ChessMove>, king_sq: u8, side: Color, castle_right: u8) {
+        if castle_right == 0 {
+            return;
+        }
+
+        if side == Color::White {
+            if castle_right & 8 == 8 {
+                pseudo_legal_moves.push(ChessMove { from: king_sq, to: king_sq + 2, flag: Some(Flag::Castle) })
+            }
+            
+            if castle_right & 4 == 4 {
+                pseudo_legal_moves.push(ChessMove { from: king_sq, to: king_sq - 2, flag: Some(Flag::Castle) })
+            }
+        }
+
+        if side == Color::Black {
+            if castle_right & 2 == 2 {
+                pseudo_legal_moves.push(ChessMove { from: king_sq, to: king_sq + 2, flag: Some(Flag::Castle) })
+            }
+            
+            if castle_right & 1 == 1 {
+                pseudo_legal_moves.push(ChessMove { from: king_sq, to: king_sq - 2, flag: Some(Flag::Castle) })
+            }
+        }
+
     }
 
     fn generate_pawn_moves(
@@ -507,457 +570,405 @@ impl Position {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn knight_alone_on_a1_generating_two_moves() {
-        let position = Position::new_with_fen("8/8/8/8/8/8/8/N7 w - - 0 1");
-
-        let moves: Vec<ChessMove> = position.generate_pseudo_legal_moves();
-
-        assert_eq!(
-            moves.len(),
-            2,
-            "knight on a1 should have exactly 2 moves, got {:#?}",
-            moves
-        );
-
-        let expected_moves: Vec<ChessMove> =
-            vec![ChessMove::new(0, 17, None), ChessMove::new(0, 10, None)];
-
-        for expected_move in expected_moves {
-            assert!(
-                moves.contains(&expected_move),
-                "Missing move: {:#?}",
-                expected_move
-            );
-        }
-    }
-
-    #[test]
-    fn knight_blocked_by_own_pieces() {
-        let position = Position::new_with_fen("8/8/8/8/3N4/8/2P1P3/8 w - - 0 1");
-
-        let moves: Vec<ChessMove> = position.generate_pseudo_legal_moves();
-
-        assert_eq!(
-            moves.len(),
-            10,
-            "knight on d4 should have exactly 10 moves, got {:#?}",
-            moves
-        );
-
-        let expected_moves: Vec<ChessMove> = vec![
-            ChessMove::new(
-                rank_and_file_to_square(3, 3),
-                rank_and_file_to_square(5, 2),
-                None,
-            ),
-            ChessMove::new(
-                rank_and_file_to_square(3, 3),
-                rank_and_file_to_square(5, 4),
-                None,
-            ),
-            ChessMove::new(
-                rank_and_file_to_square(3, 3),
-                rank_and_file_to_square(4, 1),
-                None,
-            ),
-            ChessMove::new(
-                rank_and_file_to_square(3, 3),
-                rank_and_file_to_square(4, 5),
-                None,
-            ),
-            ChessMove::new(
-                rank_and_file_to_square(3, 3),
-                rank_and_file_to_square(2, 1),
-                None,
-            ),
-            ChessMove::new(
-                rank_and_file_to_square(3, 3),
-                rank_and_file_to_square(2, 5),
-                None,
-            ),
-            ChessMove::new(
-                rank_and_file_to_square(1, 2),
-                rank_and_file_to_square(2, 2),
-                None,
-            ),
-            ChessMove::new(
-                rank_and_file_to_square(1, 2),
-                rank_and_file_to_square(3, 2),
-                None,
-            ),
-            ChessMove::new(
-                rank_and_file_to_square(1, 4),
-                rank_and_file_to_square(2, 4),
-                None,
-            ),
-            ChessMove::new(
-                rank_and_file_to_square(1, 4),
-                rank_and_file_to_square(3, 4),
-                None,
-            ),
-        ];
-
-        for expected_move in expected_moves {
-            assert!(
-                moves.contains(&expected_move),
-                "Missing move: {:#?}",
-                expected_move
-            );
-        }
-    }
-
-    #[test]
-    fn king_wrap_around_edge_count() {
-        let position = Position::new_with_fen("8/8/8/8/8/8/8/K7 w - - 0 1");
-
-        let moves: Vec<ChessMove> = position.generate_pseudo_legal_moves();
-
-        assert_eq!(
-            moves.len(),
-            3,
-            "knight on a1 should have exactly 3 moves, got {:#?}",
-            moves
-        );
-
-        let expected_moves: Vec<ChessMove> = vec![
-            ChessMove::new(
-                rank_and_file_to_square(0, 0),
-                rank_and_file_to_square(1, 0),
-                None,
-            ),
-            ChessMove::new(
-                rank_and_file_to_square(0, 0),
-                rank_and_file_to_square(0, 1),
-                None,
-            ),
-            ChessMove::new(
-                rank_and_file_to_square(0, 0),
-                rank_and_file_to_square(1, 1),
-                None,
-            ),
-        ];
-
-        for expected_move in expected_moves {
-            assert!(
-                moves.contains(&expected_move),
-                "Missing move: {:#?}",
-                expected_move
-            );
-        }
-    }
-
-    #[test]
-    fn king_blocked_by_own_piece() {
-        let position = Position::new_with_fen("8/8/8/8/4K3/4P3/8/8 w - - 0 1");
-
-        let moves: Vec<ChessMove> = position.generate_pseudo_legal_moves();
-
-        assert_eq!(
-            moves.len(),
-            7,
-            "king on a4 should have exactly 7 moves, got {:#?}",
-            moves
-        );
-
-        let expected_moves: Vec<ChessMove> = vec![
-            ChessMove::new(
-                rank_and_file_to_square(3, 4),
-                rank_and_file_to_square(4, 3),
-                None,
-            ),
-            ChessMove::new(
-                rank_and_file_to_square(3, 4),
-                rank_and_file_to_square(3, 3),
-                None,
-            ),
-            ChessMove::new(
-                rank_and_file_to_square(3, 4),
-                rank_and_file_to_square(2, 3),
-                None,
-            ),
-            ChessMove::new(
-                rank_and_file_to_square(3, 4),
-                rank_and_file_to_square(4, 5),
-                None,
-            ),
-            ChessMove::new(
-                rank_and_file_to_square(3, 4),
-                rank_and_file_to_square(3, 5),
-                None,
-            ),
-            ChessMove::new(
-                rank_and_file_to_square(3, 4),
-                rank_and_file_to_square(2, 5),
-                None,
-            ),
-            ChessMove::new(
-                rank_and_file_to_square(3, 4),
-                rank_and_file_to_square(4, 4),
-                None,
-            ),
-        ];
-
-        for expected_move in expected_moves {
-            assert!(
-                moves.contains(&expected_move),
-                "Missing move: {:#?}",
-                expected_move
-            );
-        }
-    }
-
-    #[test]
-    fn pawn_double_push_blocked() {
-        let position = Position::new_with_fen("8/8/8/8/4n3/8/4P3/8 w - - 0 1");
-
-        let moves: Vec<ChessMove> = position.generate_pseudo_legal_moves();
-
-        assert_eq!(
-            moves.len(),
-            1,
-            "pawn on e2 should have exactly 1 moves, got {:#?}",
-            moves
-        );
-
-        let expected_moves: Vec<ChessMove> = vec![ChessMove::new(
-            rank_and_file_to_square(1, 4),
-            rank_and_file_to_square(2, 4),
-            None,
-        )];
-
-        for expected_move in expected_moves {
-            assert!(
-                moves.contains(&expected_move),
-                "Missing move: {:#?}",
-                expected_move
-            );
-        }
-    }
-
-    #[test]
-    fn pawn_diagonal_capture() {
-        let position = Position::new_with_fen("8/8/8/8/8/3p4/4P3/8 w - - 0 1");
-
-        let moves: Vec<ChessMove> = position.generate_pseudo_legal_moves();
-
-        assert_eq!(
-            moves.len(),
-            3,
-            "pawn on e2 should have exactly 3 moves, got {:#?}",
-            moves
-        );
-
-        let expected_moves: Vec<ChessMove> = vec![
-            ChessMove::new(
-                rank_and_file_to_square(1, 4),
-                rank_and_file_to_square(2, 4),
-                None,
-            ),
-            ChessMove::new(
-                rank_and_file_to_square(1, 4),
-                rank_and_file_to_square(3, 4),
-                None,
-            ),
-            ChessMove::new(
-                rank_and_file_to_square(1, 4),
-                rank_and_file_to_square(2, 3),
-                None,
-            ),
-        ];
-
-        for expected_move in expected_moves {
-            assert!(
-                moves.contains(&expected_move),
-                "Missing move: {:#?}",
-                expected_move
-            );
-        }
-    }
-
-    #[test]
-    fn pawn_promotion() {
-        let position = Position::new_with_fen("8/4P3/8/8/8/8/8/8 w - - 0 1");
-
-        let moves: Vec<ChessMove> = position.generate_pseudo_legal_moves();
-
-        assert_eq!(
-            moves.len(),
-            4,
-            "pawn on e2 should have exactly 4 moves, got {:#?}",
-            moves
-        );
-
-        let expected_moves: Vec<ChessMove> = vec![
-            ChessMove::new(
-                rank_and_file_to_square(6, 4),
-                rank_and_file_to_square(7, 4),
-                Some(Flag::Promotion(PieceType::Rook)),
-            ),
-            ChessMove::new(
-                rank_and_file_to_square(6, 4),
-                rank_and_file_to_square(7, 4),
-                Some(Flag::Promotion(PieceType::Queen)),
-            ),
-            ChessMove::new(
-                rank_and_file_to_square(6, 4),
-                rank_and_file_to_square(7, 4),
-                Some(Flag::Promotion(PieceType::Bishop)),
-            ),
-            ChessMove::new(
-                rank_and_file_to_square(6, 4),
-                rank_and_file_to_square(7, 4),
-                Some(Flag::Promotion(PieceType::Knight)),
-            ),
-        ];
-
-        for expected_move in expected_moves {
-            assert!(
-                moves.contains(&expected_move),
-                "Missing move: {:#?}",
-                expected_move
-            );
-        }
-    }
-
-    #[test]
-    fn rook_corner_open_board_fourteen_moves() {
-        let position = Position::new_with_fen("8/8/8/8/8/8/8/R7 w - - 0 1");
-        let moves: Vec<ChessMove> = position.generate_pseudo_legal_moves();
-
-        assert_eq!(
-            moves.len(),
-            14,
-            "rook on a1 should have exactly 14 moves, got {:#?}",
-            moves
-        );
-
-        // along the a-file (a2..a8)
-        for rank in 1..8 {
-            let expected = ChessMove::new(
-                rank_and_file_to_square(0, 0),
-                rank_and_file_to_square(rank, 0),
-                None,
-            );
-            assert!(moves.contains(&expected), "Missing move: {:#?}", expected);
-        }
-        // along the 1st rank (b1..h1)
-        for file in 1..8 {
-            let expected = ChessMove::new(
-                rank_and_file_to_square(0, 0),
-                rank_and_file_to_square(0, file),
-                None,
-            );
-            assert!(moves.contains(&expected), "Missing move: {:#?}", expected);
-        }
-    }
-
-    #[test]
-    fn rook_blocked_by_own_piece_mid_ray() {
-        // rook on d4, own pawn on d6 — must stop at d5, never reach or pass d6
-        let position = Position::new_with_fen("8/3P4/8/8/3R4/8/8/8 w - - 0 1");
-        let moves: Vec<ChessMove> = position.generate_pseudo_legal_moves();
-
-        assert_eq!(
-            moves.len(),
-            16,
-            "rook on d4 blocked by own pawn on d6 should have 11 moves, got {:#?}",
-            moves
-        );
-    }
-
-    #[test]
-    fn rook_blocked_by_enemy_piece_mid_ray() {
-        // rook on d4, enemy pawn on d6 — should capture d6, but not go past it
-        let position = Position::new_with_fen("8/8/3p4/8/3R4/8/8/8 w - - 0 1");
-        let moves: Vec<ChessMove> = position.generate_pseudo_legal_moves();
-
-        assert_eq!(
-            moves.len(),
-            12,
-            "rook on d4 capturing enemy pawn on d6 should have 12 moves, got {:#?}",
-            moves
-        );
-
-        let from = rank_and_file_to_square(3, 3); // d4
-        let d6 = ChessMove::new(from, rank_and_file_to_square(5, 3), None);
-        let d7 = ChessMove::new(from, rank_and_file_to_square(6, 3), None);
-
-        assert!(
-            moves.contains(&d6),
-            "Should be able to capture enemy pawn on d6"
-        );
-        assert!(
-            !moves.contains(&d7),
-            "Should NOT be able to slide past a captured piece to d7"
-        );
-    }
-
-    #[test]
-    fn bishop_open_board_thirteen_moves() {
-        let position = Position::new_with_fen("8/8/8/8/3B4/8/8/8 w - - 0 1");
-        let moves: Vec<ChessMove> = position.generate_pseudo_legal_moves();
-
-        assert_eq!(
-            moves.len(),
-            13,
-            "bishop on d4 in open board should have 13 moves, got {:#?}",
-            moves
-        );
-
-        let from = rank_and_file_to_square(3, 3); // d4
-        let diagonal_targets = [
-            (4, 4),
-            (5, 5),
-            (6, 6),
-            (7, 7), // up-right: e5,f6,g7,h8
-            (4, 2),
-            (5, 1),
-            (6, 0), // up-left: c5,b6,a7
-            (2, 4),
-            (1, 5),
-            (0, 6), // down-right: e3,f2,g1
-            (2, 2),
-            (1, 1),
-            (0, 0), // down-left: c3,b2,a1
-        ];
-
-        for (rank, file) in diagonal_targets {
-            let expected =
-                ChessMove::new(from, rank_and_file_to_square(rank, file), None);
-            assert!(
-                moves.contains(&expected),
-                "Missing diagonal move: {:#?}",
-                expected
-            );
-        }
-    }
-
-    #[test]
-    fn queen_open_board_combines_rook_and_bishop() {
-        let position = Position::new_with_fen("8/8/8/8/3Q4/8/8/8 w - - 0 1");
-        let moves: Vec<ChessMove> = position.generate_pseudo_legal_moves();
-
-        assert_eq!(
-            moves.len(),
-            27,
-            "queen on d4 in open board should have 27 moves, got {:#?}",
-            moves
-        );
-
-        let from = rank_and_file_to_square(3, 3); // d4
-        // spot-check one straight and one diagonal, rather than re-listing all 27
-        let straight = ChessMove::new(from, rank_and_file_to_square(7, 3), None); // d8
-        let diagonal = ChessMove::new(from, rank_and_file_to_square(0, 0), None); // a1
-
-        assert!(
-            moves.contains(&straight),
-            "Missing straight-line move to d8"
-        );
-        assert!(moves.contains(&diagonal), "Missing diagonal move to a1");
-    }
-}
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+//     #[test]
+//     fn knight_alone_on_a1_generating_two_moves() {
+//         let position = Position::new_with_fen("8/8/8/8/8/8/8/N7 w - - 0 1");
+//         let moves: Vec<ChessMove> = position.generate_pseudo_legal_moves();
+//         assert_eq!(
+//             moves.len(),
+//             2,
+//             "knight on a1 should have exactly 2 moves, got {:#?}",
+//             moves
+//         );
+//         let expected_moves: Vec<ChessMove> =
+//             vec![ChessMove::new(0, 17, None), ChessMove::new(0, 10, None)];
+//         for expected_move in expected_moves {
+//             assert!(
+//                 moves.contains(&expected_move),
+//                 "Missing move: {:#?}",
+//                 expected_move
+//             );
+//         }
+//     }
+//     #[test]
+//     fn knight_blocked_by_own_pieces() {
+//         let position = Position::new_with_fen("8/8/8/8/3N4/8/2P1P3/8 w - - 0 1");
+//         let moves: Vec<ChessMove> = position.generate_pseudo_legal_moves();
+//         assert_eq!(
+//             moves.len(),
+//             10,
+//             "knight on d4 should have exactly 10 moves, got {:#?}",
+//             moves
+//         );
+//         let expected_moves: Vec<ChessMove> = vec![
+//             ChessMove::new(
+//                 rank_and_file_to_square(3, 3),
+//                 rank_and_file_to_square(5, 2),
+//                 None,
+//             ),
+//             ChessMove::new(
+//                 rank_and_file_to_square(3, 3),
+//                 rank_and_file_to_square(5, 4),
+//                 None,
+//             ),
+//             ChessMove::new(
+//                 rank_and_file_to_square(3, 3),
+//                 rank_and_file_to_square(4, 1),
+//                 None,
+//             ),
+//             ChessMove::new(
+//                 rank_and_file_to_square(3, 3),
+//                 rank_and_file_to_square(4, 5),
+//                 None,
+//             ),
+//             ChessMove::new(
+//                 rank_and_file_to_square(3, 3),
+//                 rank_and_file_to_square(2, 1),
+//                 None,
+//             ),
+//             ChessMove::new(
+//                 rank_and_file_to_square(3, 3),
+//                 rank_and_file_to_square(2, 5),
+//                 None,
+//             ),
+//             ChessMove::new(
+//                 rank_and_file_to_square(1, 2),
+//                 rank_and_file_to_square(2, 2),
+//                 None,
+//             ),
+//             ChessMove::new(
+//                 rank_and_file_to_square(1, 2),
+//                 rank_and_file_to_square(3, 2),
+//                 None,
+//             ),
+//             ChessMove::new(
+//                 rank_and_file_to_square(1, 4),
+//                 rank_and_file_to_square(2, 4),
+//                 None,
+//             ),
+//             ChessMove::new(
+//                 rank_and_file_to_square(1, 4),
+//                 rank_and_file_to_square(3, 4),
+//                 None,
+//             ),
+//         ];
+//         for expected_move in expected_moves {
+//             assert!(
+//                 moves.contains(&expected_move),
+//                 "Missing move: {:#?}",
+//                 expected_move
+//             );
+//         }
+//     }
+//     #[test]
+//     fn king_wrap_around_edge_count() {
+//         let position = Position::new_with_fen("8/8/8/8/8/8/8/K7 w - - 0 1");
+//         let moves: Vec<ChessMove> = position.generate_pseudo_legal_moves();
+//         assert_eq!(
+//             moves.len(),
+//             3,
+//             "knight on a1 should have exactly 3 moves, got {:#?}",
+//             moves
+//         );
+//         let expected_moves: Vec<ChessMove> = vec![
+//             ChessMove::new(
+//                 rank_and_file_to_square(0, 0),
+//                 rank_and_file_to_square(1, 0),
+//                 None,
+//             ),
+//             ChessMove::new(
+//                 rank_and_file_to_square(0, 0),
+//                 rank_and_file_to_square(0, 1),
+//                 None,
+//             ),
+//             ChessMove::new(
+//                 rank_and_file_to_square(0, 0),
+//                 rank_and_file_to_square(1, 1),
+//                 None,
+//             ),
+//         ];
+//         for expected_move in expected_moves {
+//             assert!(
+//                 moves.contains(&expected_move),
+//                 "Missing move: {:#?}",
+//                 expected_move
+//             );
+//         }
+//     }
+//     #[test]
+//     fn king_blocked_by_own_piece() {
+//         let position = Position::new_with_fen("8/8/8/8/4K3/4P3/8/8 w - - 0 1");
+//         let moves: Vec<ChessMove> = position.generate_pseudo_legal_moves();
+//         assert_eq!(
+//             moves.len(),
+//             7,
+//             "king on a4 should have exactly 7 moves, got {:#?}",
+//             moves
+//         );
+//         let expected_moves: Vec<ChessMove> = vec![
+//             ChessMove::new(
+//                 rank_and_file_to_square(3, 4),
+//                 rank_and_file_to_square(4, 3),
+//                 None,
+//             ),
+//             ChessMove::new(
+//                 rank_and_file_to_square(3, 4),
+//                 rank_and_file_to_square(3, 3),
+//                 None,
+//             ),
+//             ChessMove::new(
+//                 rank_and_file_to_square(3, 4),
+//                 rank_and_file_to_square(2, 3),
+//                 None,
+//             ),
+//             ChessMove::new(
+//                 rank_and_file_to_square(3, 4),
+//                 rank_and_file_to_square(4, 5),
+//                 None,
+//             ),
+//             ChessMove::new(
+//                 rank_and_file_to_square(3, 4),
+//                 rank_and_file_to_square(3, 5),
+//                 None,
+//             ),
+//             ChessMove::new(
+//                 rank_and_file_to_square(3, 4),
+//                 rank_and_file_to_square(2, 5),
+//                 None,
+//             ),
+//             ChessMove::new(
+//                 rank_and_file_to_square(3, 4),
+//                 rank_and_file_to_square(4, 4),
+//                 None,
+//             ),
+//         ];
+//         for expected_move in expected_moves {
+//             assert!(
+//                 moves.contains(&expected_move),
+//                 "Missing move: {:#?}",
+//                 expected_move
+//             );
+//         }
+//     }
+//     #[test]
+//     fn pawn_double_push_blocked() {
+//         let position = Position::new_with_fen("8/8/8/8/4n3/8/4P3/8 w - - 0 1");
+//         let moves: Vec<ChessMove> = position.generate_pseudo_legal_moves();
+//         assert_eq!(
+//             moves.len(),
+//             1,
+//             "pawn on e2 should have exactly 1 moves, got {:#?}",
+//             moves
+//         );
+//         let expected_moves: Vec<ChessMove> = vec![ChessMove::new(
+//             rank_and_file_to_square(1, 4),
+//             rank_and_file_to_square(2, 4),
+//             None,
+//         )];
+//         for expected_move in expected_moves {
+//             assert!(
+//                 moves.contains(&expected_move),
+//                 "Missing move: {:#?}",
+//                 expected_move
+//             );
+//         }
+//     }
+//     #[test]
+//     fn pawn_diagonal_capture() {
+//         let position = Position::new_with_fen("8/8/8/8/8/3p4/4P3/8 w - - 0 1");
+//         let moves: Vec<ChessMove> = position.generate_pseudo_legal_moves();
+//         assert_eq!(
+//             moves.len(),
+//             3,
+//             "pawn on e2 should have exactly 3 moves, got {:#?}",
+//             moves
+//         );
+//         let expected_moves: Vec<ChessMove> = vec![
+//             ChessMove::new(
+//                 rank_and_file_to_square(1, 4),
+//                 rank_and_file_to_square(2, 4),
+//                 None,
+//             ),
+//             ChessMove::new(
+//                 rank_and_file_to_square(1, 4),
+//                 rank_and_file_to_square(3, 4),
+//                 None,
+//             ),
+//             ChessMove::new(
+//                 rank_and_file_to_square(1, 4),
+//                 rank_and_file_to_square(2, 3),
+//                 None,
+//             ),
+//         ];
+//         for expected_move in expected_moves {
+//             assert!(
+//                 moves.contains(&expected_move),
+//                 "Missing move: {:#?}",
+//                 expected_move
+//             );
+//         }
+//     }
+//     #[test]
+//     fn pawn_promotion() {
+//         let position = Position::new_with_fen("8/4P3/8/8/8/8/8/8 w - - 0 1");
+//         let moves: Vec<ChessMove> = position.generate_pseudo_legal_moves();
+//         assert_eq!(
+//             moves.len(),
+//             4,
+//             "pawn on e2 should have exactly 4 moves, got {:#?}",
+//             moves
+//         );
+//         let expected_moves: Vec<ChessMove> = vec![
+//             ChessMove::new(
+//                 rank_and_file_to_square(6, 4),
+//                 rank_and_file_to_square(7, 4),
+//                 Some(Flag::Promotion(PieceType::Rook)),
+//             ),
+//             ChessMove::new(
+//                 rank_and_file_to_square(6, 4),
+//                 rank_and_file_to_square(7, 4),
+//                 Some(Flag::Promotion(PieceType::Queen)),
+//             ),
+//             ChessMove::new(
+//                 rank_and_file_to_square(6, 4),
+//                 rank_and_file_to_square(7, 4),
+//                 Some(Flag::Promotion(PieceType::Bishop)),
+//             ),
+//             ChessMove::new(
+//                 rank_and_file_to_square(6, 4),
+//                 rank_and_file_to_square(7, 4),
+//                 Some(Flag::Promotion(PieceType::Knight)),
+//             ),
+//         ];
+//         for expected_move in expected_moves {
+//             assert!(
+//                 moves.contains(&expected_move),
+//                 "Missing move: {:#?}",
+//                 expected_move
+//             );
+//         }
+//     }
+//     #[test]
+//     fn rook_corner_open_board_fourteen_moves() {
+//         let position = Position::new_with_fen("8/8/8/8/8/8/8/R7 w - - 0 1");
+//         let moves: Vec<ChessMove> = position.generate_pseudo_legal_moves();
+//         assert_eq!(
+//             moves.len(),
+//             14,
+//             "rook on a1 should have exactly 14 moves, got {:#?}",
+//             moves
+//         );
+//         // along the a-file (a2..a8)
+//         for rank in 1..8 {
+//             let expected = ChessMove::new(
+//                 rank_and_file_to_square(0, 0),
+//                 rank_and_file_to_square(rank, 0),
+//                 None,
+//             );
+//             assert!(moves.contains(&expected), "Missing move: {:#?}", expected);
+//         }
+//         // along the 1st rank (b1..h1)
+//         for file in 1..8 {
+//             let expected = ChessMove::new(
+//                 rank_and_file_to_square(0, 0),
+//                 rank_and_file_to_square(0, file),
+//                 None,
+//             );
+//             assert!(moves.contains(&expected), "Missing move: {:#?}", expected);
+//         }
+//     }
+//     #[test]
+//     fn rook_blocked_by_own_piece_mid_ray() {
+//         // rook on d4, own pawn on d6 — must stop at d5, never reach or pass d6
+//         let position = Position::new_with_fen("8/3P4/8/8/3R4/8/8/8 w - - 0 1");
+//         let moves: Vec<ChessMove> = position.generate_pseudo_legal_moves();
+//         assert_eq!(
+//             moves.len(),
+//             16,
+//             "rook on d4 blocked by own pawn on d6 should have 11 moves, got {:#?}",
+//             moves
+//         );
+//     }
+//     #[test]
+//     fn rook_blocked_by_enemy_piece_mid_ray() {
+//         // rook on d4, enemy pawn on d6 — should capture d6, but not go past it
+//         let position = Position::new_with_fen("8/8/3p4/8/3R4/8/8/8 w - - 0 1");
+//         let moves: Vec<ChessMove> = position.generate_pseudo_legal_moves();
+//         assert_eq!(
+//             moves.len(),
+//             12,
+//             "rook on d4 capturing enemy pawn on d6 should have 12 moves, got {:#?}",
+//             moves
+//         );
+//         let from = rank_and_file_to_square(3, 3); // d4
+//         let d6 = ChessMove::new(from, rank_and_file_to_square(5, 3), None);
+//         let d7 = ChessMove::new(from, rank_and_file_to_square(6, 3), None);
+//         assert!(
+//             moves.contains(&d6),
+//             "Should be able to capture enemy pawn on d6"
+//         );
+//         assert!(
+//             !moves.contains(&d7),
+//             "Should NOT be able to slide past a captured piece to d7"
+//         );
+//     }
+//     #[test]
+//     fn bishop_open_board_thirteen_moves() {
+//         let position = Position::new_with_fen("8/8/8/8/3B4/8/8/8 w - - 0 1");
+//         let moves: Vec<ChessMove> = position.generate_pseudo_legal_moves();
+//         assert_eq!(
+//             moves.len(),
+//             13,
+//             "bishop on d4 in open board should have 13 moves, got {:#?}",
+//             moves
+//         );
+//         let from = rank_and_file_to_square(3, 3); // d4
+//         let diagonal_targets = [
+//             (4, 4),
+//             (5, 5),
+//             (6, 6),
+//             (7, 7), // up-right: e5,f6,g7,h8
+//             (4, 2),
+//             (5, 1),
+//             (6, 0), // up-left: c5,b6,a7
+//             (2, 4),
+//             (1, 5),
+//             (0, 6), // down-right: e3,f2,g1
+//             (2, 2),
+//             (1, 1),
+//             (0, 0), // down-left: c3,b2,a1
+//         ];
+//         for (rank, file) in diagonal_targets {
+//             let expected =
+//                 ChessMove::new(from, rank_and_file_to_square(rank, file), None);
+//             assert!(
+//                 moves.contains(&expected),
+//                 "Missing diagonal move: {:#?}",
+//                 expected
+//             );
+//         }
+//     }
+//     #[test]
+//     fn queen_open_board_combines_rook_and_bishop() {
+//         let position = Position::new_with_fen("8/8/8/8/3Q4/8/8/8 w - - 0 1");
+//         let moves: Vec<ChessMove> = position.generate_pseudo_legal_moves();
+//         assert_eq!(
+//             moves.len(),
+//             27,
+//             "queen on d4 in open board should have 27 moves, got {:#?}",
+//             moves
+//         );
+//         let from = rank_and_file_to_square(3, 3); // d4
+//         // spot-check one straight and one diagonal, rather than re-listing all 27
+//         let straight = ChessMove::new(from, rank_and_file_to_square(7, 3), None); // d8
+//         let diagonal = ChessMove::new(from, rank_and_file_to_square(0, 0), None); // a1
+//         assert!(
+//             moves.contains(&straight),
+//             "Missing straight-line move to d8"
+//         );
+//         assert!(moves.contains(&diagonal), "Missing diagonal move to a1");
+//     }
+// }

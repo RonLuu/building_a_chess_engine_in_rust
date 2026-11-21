@@ -3,10 +3,10 @@ use std::fmt;
 
 use crate::{
     board::Board,
-    chess_move::{ChessMove, Flag},
+    chess_move::{ChessMove},
     game_state::GameState,
     piece::{Color, Piece, PieceType},
-    constants::{EN_PASSANT_RANKS, END_RANKS}
+    // constants::{EN_PASSANT_RANKS, END_RANKS}
 };
 
 const FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";

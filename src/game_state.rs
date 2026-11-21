@@ -1,7 +1,6 @@
 use std::fmt;
 
 use crate::{
-    chess_move::Flag,
     constants::{
         BLACK_KING_CASTLE_BIT, BLACK_QUEEN_CASTLE_BIT, ROOK_SQUARES, WHITE_KING_CASTLE_BIT,
         WHITE_QUEEN_CASTLE_BIT,

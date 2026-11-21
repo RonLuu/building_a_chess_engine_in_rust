@@ -4,9 +4,9 @@ pub fn check_sq_in_board(rank: i8, file: i8) -> bool {
     (0 <= rank && rank < 8) && (0 <= file && file < 8)
 }
 
-pub fn rank_and_file_to_square(rank: u8, file: u8) -> u8 {
-    rank * 8 + file
-}
+// pub fn rank_and_file_to_square(rank: u8, file: u8) -> u8 {
+//     rank * 8 + file
+// }
 
 pub fn square_to_string(square: u8) -> String {
     let mut str_square: String = String::new();
