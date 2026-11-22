@@ -1,20 +1,22 @@
 use crate::{
-    board::Board, chess_move::{ChessMove, Flag}, game_state, piece::{Color, PieceType}, position::Position, util::check_sq_in_board,
+    board::Board, chess_move::{ChessMove, Flag::{self, Castle}}, constants::{WHITE_KING_CASTLE_BIT, WHITE_QUEEN_CASTLE_BIT,BLACK_KING_CASTLE_BIT, BLACK_QUEEN_CASTLE_BIT}, game_state, piece::{Color, PieceType}, position::Position, util::check_sq_in_board,
 };
 
 impl Position {
     pub fn generate_legal_moves(&self) -> Vec<ChessMove> {
         let mut legal_moves = Vec::new();
         let pseudo_legal_moves: Vec<ChessMove> = self.generate_pseudo_legal_moves();
-        
+
         for pseudo_legal_move in &pseudo_legal_moves {
-            if pseudo_legal_move.flag == Some(Flag::Castle) && !self.check_legal_castle(pseudo_legal_move) {
-                continue
+            if pseudo_legal_move.flag == Some(Flag::Castle)
+                && !self.check_legal_castle(pseudo_legal_move)
+            {
+                continue;
             }
 
             let new_position: Position = self.apply_move(pseudo_legal_move);
             if !new_position.check_legal() {
-                continue
+                continue;
             }
             legal_moves.push(*pseudo_legal_move);
         }
@@ -37,19 +39,27 @@ impl Position {
 
         let from = pseudo_legal_move.from;
         let to = pseudo_legal_move.to;
-        
+
         // King side castle
-        if (from as i8 - to as i8) > 0 {
-            return !self.board.is_square_attacked(attacked_king_sq, attack_side) &&
-                    !self.board.is_square_attacked(attacked_king_sq + 1, attack_side) &&
-                    !self.board.is_square_attacked(attacked_king_sq + 2, attack_side);
+        if (from as i8 - to as i8) < 0 {
+            return !self.board.is_square_attacked(attacked_king_sq, attack_side)
+                && !self
+                    .board
+                    .is_square_attacked(attacked_king_sq + 1, attack_side)
+                && !self
+                    .board
+                    .is_square_attacked(attacked_king_sq + 2, attack_side);
         } else {
-            return !self.board.is_square_attacked(attacked_king_sq, attack_side) &&
-                    !self.board.is_square_attacked(attacked_king_sq - 1, attack_side) &&
-                    !self.board.is_square_attacked(attacked_king_sq - 2, attack_side);
+            return !self.board.is_square_attacked(attacked_king_sq, attack_side)
+                && !self
+                    .board
+                    .is_square_attacked(attacked_king_sq - 1, attack_side)
+                && !self
+                    .board
+                    .is_square_attacked(attacked_king_sq - 2, attack_side);
         }
     }
-    
+
     fn check_legal(&self) -> bool {
         let attack_side = self.game_state.side;
         let attacked_king_sq;
@@ -74,7 +84,7 @@ impl Position {
             board,
             &mut pseudo_legal_moves,
             en_passant_sq,
-            castle_right
+            castle_right,
         );
         Self::generate_pseudo_legal_sliding_moves(side, board, &mut pseudo_legal_moves);
         pseudo_legal_moves
@@ -85,7 +95,7 @@ impl Position {
         board: &Board,
         pseudo_legal_moves: &mut Vec<ChessMove>,
         en_passant_sq: u8,
-        castle_right: u8
+        castle_right: u8,
     ) {
         Self::generate_pawn_moves(side, board, pseudo_legal_moves, en_passant_sq);
         Self::generate_king_moves(side, board, pseudo_legal_moves, castle_right);
@@ -139,7 +149,12 @@ impl Position {
         }
     }
 
-    fn generate_king_moves(side: Color, board: &Board, pseudo_legal_moves: &mut Vec<ChessMove>, castle_right: u8) {
+    fn generate_king_moves(
+        side: Color,
+        board: &Board,
+        pseudo_legal_moves: &mut Vec<ChessMove>,
+        castle_right: u8,
+    ) {
         let king_directions: [(i8, i8); 8] = [
             (0, 1),
             (0, -1),
@@ -182,7 +197,13 @@ impl Position {
                             let chess_move = ChessMove::new(from_sq, to_sq, None);
                             pseudo_legal_moves.push(chess_move);
                         }
-                        Self::generate_castle_moves(pseudo_legal_moves, from_sq, side, castle_right);
+                        Self::generate_castle_moves(
+                            pseudo_legal_moves,
+                            board,
+                            from_sq,
+                            side,
+                            castle_right,
+                        );
                         break;
                     }
                     None => continue,
@@ -191,31 +212,48 @@ impl Position {
         }
     }
 
-    fn generate_castle_moves(pseudo_legal_moves: &mut Vec<ChessMove>, king_sq: u8, side: Color, castle_right: u8) {
+    fn generate_castle_moves(
+        pseudo_legal_moves: &mut Vec<ChessMove>,
+        board: &Board,
+        king_sq: u8,
+        side: Color,
+        castle_right: u8,
+    ) {
         if castle_right == 0 {
             return;
         }
 
-        if side == Color::White {
-            if castle_right & 8 == 8 {
-                pseudo_legal_moves.push(ChessMove { from: king_sq, to: king_sq + 2, flag: Some(Flag::Castle) })
+        fn check_castle_right(castle_right: u8, castle_right_bit: u8) -> bool {
+            castle_right & castle_right_bit == castle_right_bit
+        }
+
+        fn check_and_add_king_castle_path(pseudo_legal_moves: &mut Vec<ChessMove>, board: &Board, king_sq: u8) {
+            if board.get_piece_from_square((king_sq + 1) as usize).is_none() &&
+                board.get_piece_from_square((king_sq + 2) as usize).is_none() {
+                    pseudo_legal_moves.push(ChessMove { from: king_sq, to: king_sq + 2, flag: Some(Castle) })
             }
-            
-            if castle_right & 4 == 4 {
-                pseudo_legal_moves.push(ChessMove { from: king_sq, to: king_sq - 2, flag: Some(Flag::Castle) })
+        }
+        
+        fn check_and_add_queen_castle_path(pseudo_legal_moves: &mut Vec<ChessMove>, board: &Board, king_sq: u8) {
+            if board.get_piece_from_square((king_sq - 1) as usize).is_none() &&
+                board.get_piece_from_square((king_sq - 2) as usize).is_none() &&
+                board.get_piece_from_square((king_sq - 3) as usize).is_none() {
+                    pseudo_legal_moves.push(ChessMove { from: king_sq, to: king_sq - 2, flag: Some(Castle) });
             }
         }
 
-        if side == Color::Black {
-            if castle_right & 2 == 2 {
-                pseudo_legal_moves.push(ChessMove { from: king_sq, to: king_sq + 2, flag: Some(Flag::Castle) })
-            }
-            
-            if castle_right & 1 == 1 {
-                pseudo_legal_moves.push(ChessMove { from: king_sq, to: king_sq - 2, flag: Some(Flag::Castle) })
-            }
-        }
+        let (king_bit, queen_bit) = match side {
+            Color::White => (WHITE_KING_CASTLE_BIT, WHITE_QUEEN_CASTLE_BIT),
+            Color::Black => (BLACK_KING_CASTLE_BIT, BLACK_QUEEN_CASTLE_BIT)
+        };
 
+        if check_castle_right(castle_right, king_bit) {
+            check_and_add_king_castle_path(pseudo_legal_moves, board, king_sq)
+        }
+        
+        if check_castle_right(castle_right, queen_bit) {
+            check_and_add_queen_castle_path(pseudo_legal_moves,board, king_sq)
+        }
     }
 
     fn generate_pawn_moves(
