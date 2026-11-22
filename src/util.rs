@@ -1,4 +1,4 @@
-use crate::{chess_move::Flag};
+use crate::chess_move::{ChessMove, Flag};
 
 pub fn check_sq_in_board(rank: i8, file: i8) -> bool {
     (0 <= rank && rank < 8) && (0 <= file && file < 8)
@@ -22,4 +22,17 @@ pub fn flag_to_string(flag: Option<Flag>) -> String {
         Some(Flag::Castle) => String::from("Castle move"),
         Some(Flag::Promotion(piece_type)) => piece_type.to_string(),
     }
+}
+
+pub fn chess_moves_to_string(chess_moves: &Vec<ChessMove>) -> String{
+    let mut str_chess_moves = String::from("");
+    let mut index = 1;
+    for chess_move in chess_moves {
+        str_chess_moves.push_str(&index.to_string());
+        str_chess_moves.push_str(" ");
+        str_chess_moves.push_str(&chess_move.to_string());
+        str_chess_moves.push_str("\n");
+        index += 1;
+    }
+    str_chess_moves
 }

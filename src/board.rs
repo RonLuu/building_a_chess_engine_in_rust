@@ -4,7 +4,7 @@ use crate::{
     chess_move::Flag, piece::{Color, Piece, PieceType}
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct Board {
     pub squares: [[Option<Piece>; 8]; 8],
 }

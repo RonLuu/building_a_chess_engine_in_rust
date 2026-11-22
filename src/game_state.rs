@@ -10,7 +10,7 @@ use crate::{
 
 pub const EMPTY_EN_PASS_SQ: u8 = 64;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct GameState {
     pub side: Color,
     pub castle_right: u8,
@@ -98,6 +98,10 @@ impl GameState {
         byte_fen: &[u8],
         byte_index: &mut usize,
     ) {
+        if *byte_index >= byte_fen.len() {
+            return;
+        }
+
         while byte_fen[*byte_index] != b' ' {
             let digit = byte_fen[*byte_index] - b'0';
             *half_move = *half_move * 10 + digit;
