@@ -8,6 +8,7 @@ mod attack;
 mod util;
 mod constants;
 mod perft;
+mod undo_info;
 
 
 use crate::{perft::{perft, perft_divide}, position::Position};

@@ -2,19 +2,15 @@ use core::panic;
 use std::fmt;
 
 use crate::{
-    board::Board,
-    chess_move::{ChessMove},
-    game_state::GameState,
-    piece::{Color, Piece, PieceType},
-    // constants::{EN_PASSANT_RANKS, END_RANKS}
+    board::Board, chess_move::ChessMove, game_state::{GameState}, piece::{Color, Piece, PieceType}, undo_info::UndoInfo,
 };
 
 const FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct Position {
     pub board: Board,
-    pub game_state: GameState
+    pub game_state: GameState,
 }
 
 impl Position {
@@ -81,19 +77,51 @@ impl Position {
         let from_square = chess_move.from;
         let to_square = chess_move.to;
         let flag = chess_move.flag;
-        
+
         let from_piece = match new_board.get_piece_from_square(from_square as usize) {
             None => panic!("There should be a piece here"),
             Some(piece) => piece
         };
-        
-        let is_captured = new_board.get_piece_from_square(to_square as usize).is_some();
-        
+
+        let is_captured = new_board
+            .get_piece_from_square(to_square as usize)
+            .is_some();
+
         new_game_state.apply_move(from_square, to_square, from_piece, is_captured);
         new_board.apply_move(from_square, to_square, flag, from_piece);
         new_position
     }
 
+    pub fn make_move(&mut self, chess_move: &ChessMove) -> UndoInfo {
+        let game_state = &mut self.game_state;
+        let board = &mut self.board;
+
+        let from_square = chess_move.from;
+        let to_square = chess_move.to;
+
+        let captured_piece = board.get_piece_from_square(to_square as usize);
+        let undo_info = UndoInfo::new(
+            game_state.castle_right,
+            game_state.en_pass_sq,
+            game_state.half_move,
+            captured_piece,
+        );
+        
+        let is_captured = match captured_piece {
+            None => false,
+            Some(_piece) => true
+        };
+        
+        let from_piece = match board.get_piece_from_square(from_square as usize) {
+            None => panic!("There should be a piece here"),
+            Some(piece) => piece,
+        };
+
+        game_state.apply_move(from_square, to_square, from_piece, is_captured);
+        board.apply_move(from_square, to_square, chess_move.flag, from_piece);
+
+        return undo_info;
+    }
 }
 
 impl fmt::Display for Position {
