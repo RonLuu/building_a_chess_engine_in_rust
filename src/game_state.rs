@@ -10,7 +10,7 @@ use crate::{
 
 pub const EMPTY_EN_PASS_SQ: u8 = 64;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct GameState {
     pub side: Color,
     pub castle_right: u8,
